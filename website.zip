@@ -1,0 +1,127 @@
+import os
+import json
+import shutil
+from zipfile import ZipFile
+
+# Directory setup
+site_root = "/mnt/data/Dressify"
+os.makedirs(os.path.join(site_root, "icons"), exist_ok=True)
+
+# index.html
+index_html = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dressify</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#e91e63" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #fff5f8; padding: 20px; }
+    h1 { color: #e91e63; text-align: center; }
+    .product { border: 1px solid #eee; border-radius: 12px; background: #fff; padding: 15px; margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .product img { width: 100%; border-radius: 10px; }
+    .btn-order { display: block; width: 100%; background: #e91e63; color: white; border: none; padding: 10px; border-radius: 6px; text-align: center; text-decoration: none; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Welcome to Dressify</h1>
+  <div id="products"></div>
+
+  <script>
+    fetch('products.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('products');
+        data.forEach(p => {
+          container.innerHTML += `
+            <div class="product">
+              <img src="${p.img}" alt="${p.name}">
+              <h3>${p.name}</h3>
+              <p>₹${p.price}</p>
+              <a class="btn-order" href="https://wa.me/918413041528?text=I want to buy: ${p.name} for ₹${p.price}">Order via WhatsApp</a>
+            </div>
+          `;
+        });
+      });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
+'''
+with open(os.path.join(site_root, "index.html"), "w") as f:
+    f.write(index_html)
+
+# products.json
+products = [
+  {
+    "name": "Casual T-Shirt",
+    "price": 499,
+    "img": "https://via.placeholder.com/300x300?text=T-Shirt"
+  },
+  {
+    "name": "Denim Jacket",
+    "price": 1299,
+    "img": "https://via.placeholder.com/300x300?text=Jacket"
+  },
+  {
+    "name": "Summer Dress",
+    "price": 899,
+    "img": "https://via.placeholder.com/300x300?text=Dress"
+  }
+]
+with open(os.path.join(site_root, "products.json"), "w") as f:
+    json.dump(products, f, indent=2)
+
+# manifest.json
+manifest = {
+  "name": "Dressify",
+  "short_name": "Dressify",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e91e63",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+with open(os.path.join(site_root, "manifest.json"), "w") as f:
+    json.dump(manifest, f, indent=2)
+
+# service-worker.js
+service_worker = '''self.addEventListener('install', function(event) {
+  console.log('Service Worker installed.');
+});
+self.addEventListener('fetch', function(event) {
+  // You can cache resources here later
+});
+'''
+with open(os.path.join(site_root, "service-worker.js"), "w") as f:
+    f.write(service_worker)
+
+# Dummy icons (just placeholder solid color PNGs)
+from PIL import Image
+
+icon_192 = Image.new('RGB', (192, 192), color='#e91e63')
+icon_512 = Image.new('RGB', (512, 512), color='#e91e63')
+icon_192.save(os.path.join(site_root, "icons", "icon-192.png"))
+icon_512.save(os.path.join(site_root, "icons", "icon-512.png"))
+
+# Zip the full folder
+zip_path = "/mnt/data/Dressify_website.zip"
+shutil.make_archive(zip_path.replace('.zip',''), 'zip', site_root)
+
+zip_path
