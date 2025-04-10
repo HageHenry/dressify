@@ -1,0 +1,108 @@
+# Bundle everything into one deployable folder structure for Netlify
+final_zip_path = "/mnt/data/dressify_full_site.zip"
+site_root = "/mnt/data/dressify_site"
+os.makedirs(os.path.join(site_root, "icons"), exist_ok=True)
+
+# Copy HTML
+html_code = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dressify</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e91e63">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #fff5f8;
+    }
+    .container {
+      padding: 20px;
+    }
+    .product {
+      border: 1px solid #eee;
+      padding: 15px;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    }
+    .product img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+    }
+    .btn-order {
+      background-color: #e91e63;
+      color: white;
+    }
+    .btn-order:hover {
+      background-color: #d81b60;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1 class="text-center text-danger mb-4">Welcome to Dressify</h1>
+  <div id="productList" class="row row-cols-1 row-cols-md-3 g-4"></div>
+</div>
+
+<script>
+fetch('products.json')
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById('productList');
+    data.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'col';
+      el.innerHTML = `
+        <div class="product">
+          <img src="${p.img}" alt="${p.name}" loading="lazy">
+          <h5 class="mt-2">${p.name}</h5>
+          <p>₹${p.price}</p>
+          <a class="btn btn-order w-100" href="https://wa.me/918413041528?text=I want to buy: ${p.name} - ₹${p.price}" target="_blank">Order via WhatsApp</a>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  });
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log('Service Worker Registered!'));
+  }
+</script>
+</body>
+</html>
+'''
+
+with open(os.path.join(site_root, "index.html"), "w") as f:
+    f.write(html_code)
+
+# Sample products.json
+products_json = [
+    {"name": "Classic Tee", "price": 499, "img": "https://via.placeholder.com/300x300.png?text=Classic+Tee"},
+    {"name": "Denim Jacket", "price": 1199, "img": "https://via.placeholder.com/300x300.png?text=Denim+Jacket"},
+    {"name": "Summer Dress", "price": 899, "img": "https://via.placeholder.com/300x300.png?text=Summer+Dress"}
+]
+
+import json
+with open(os.path.join(site_root, "products.json"), "w") as f:
+    json.dump(products_json, f, indent=2)
+
+# Copy previously generated manifest and service worker
+import shutil
+shutil.copy("/mnt/data/manifest.json", os.path.join(site_root, "manifest.json"))
+shutil.copy("/mnt/data/service-worker.js", os.path.join(site_root, "service-worker.js"))
+
+# Copy icons
+shutil.copy("/mnt/data/icons/icon-192.png", os.path.join(site_root, "icons", "icon-192.png"))
+shutil.copy("/mnt/data/icons/icon-512.png", os.path.join(site_root, "icons", "icon-512.png"))
+
+# Zip it all up
+shutil.make_archive(final_zip_path.replace(".zip", ""), 'zip', site_root)
+
+final_zip_path
